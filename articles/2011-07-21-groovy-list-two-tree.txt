@@ -1,0 +1,152 @@
+---
+title: Groovy List Two Tree
+author: John Layton
+date: 2011/07/21
+
+<h4>Scenario 1:</h4>
+As a consumer of the blog application restful api
+I want to be able to filter posts by author
+And group posts by date then topic 
+and have each node in the tree idenditified by the text propery
+and have the children of each node contained in an item array
+In order to generate a nested list view of blogs
+
+<h5>Example:</h5>
+
+http://dev.sencha.com/deploy/touch/examples/...
+
+<h5>In Grails:</h5>
+
+http://myapp/blog/post/filter?format=json&topic=Food&grouping=topic,created
+
+<pre>
+[
+  {
+    text: "blogs",
+    items: [
+      {
+        text: "20110101",
+        items: [
+          {
+            text: "Music"
+            items: [
+              { leaf: true, author: "...", title: "...", topic: "...", text: "...", ... }
+            ]
+          },
+          {
+            text: "Death"
+            items: [
+              { leaf: true, author: "...", title: "...", topic: "...", text: "...", ... }
+            ]
+          }
+        ]
+      },
+      {
+        text: "20110102",
+        items: [
+          {
+            text: "Food"
+            items: [
+              { leaf: true, author: "...", title: "...", topic: "...", text: "...", ... }
+              { leaf: true, author: "...", title: "...", topic: "...", text: "...", ... }
+            ]
+          }
+        ]
+      },
+    ]
+  }
+]
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+class Post {
+  static transients = ["leaf"]
+  ...
+  def getLeaf() { true }
+}
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+class Node {
+  def text  = ""
+  def items = []
+}
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+    List.metaClass.toTree = { List closures, Closure node = null ->
+      if(closures && !closures.empty) {
+        def result = delegate.groupBy(closures.head()).each({ entry ->
+          entry.value = closures.tail().isEmpty() ? entry.value : entry.value.toTree(closures.tail(), node)
+        }).sort({ a,b -> a.key <=> b.key })
+        if (node)
+          result.collect(node)
+        else
+          result
+      }
+      else
+        delegate
+    }
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+    List.metaClass.toNodeTree = { Closure... closures ->
+      delegate.toTree(closures as List, { entry ->
+        new Node(text: entry.key ?: "Unknown", items: entry.value)
+      })
+    }
+
+    List.metaClass.toNodeTree = { String... properties ->
+      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), { entry ->
+        new Node(text: entry.key ?: "Unknown", items: entry.value)
+      })
+    }
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+class Node {
+  def text  = ""
+  def items = []
+  
+  static create(entry) {
+     new Node(text: entry.key ?: "Unknown", items: entry.value)
+  }
+}
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+    List.metaClass.toNodeTree = { Closure... closures ->
+      delegate.toTree(closures as List, Node.&create)
+    }
+
+    List.metaClass.toNodeTree = { String... properties ->
+      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), Node.&create)
+    }
+</pre>
+
+Or...
+
+<pre class="brush:java" type="syntaxhighlighter">
+    List.metaClass.toTree = { Closure node, Closure... closures ->
+      delegate.toTree(closures as List, node)
+    }
+
+    List.metaClass.toTree = { Closure node, String... properties ->
+      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node)
+    }
+</pre>
+
+<pre class="brush:java" type="syntaxhighlighter">
+  def filter = {
+    def posts = Post.findAllByAuthor(params.author ?: "")
+
+    if (params.grouping) {
+      posts = posts.toTree({ entry -> [text: entry.key, items: entry.value] }, params.grouping.split(','))
+    }
+    
+    withFormat {
+      json { render posts as JSON }
+    }
+  }        
+</pre>
+

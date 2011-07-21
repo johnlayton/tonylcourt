@@ -1,0 +1,146 @@
+---
+title: Groovy List Two Three
+author: John Layton
+date: 2011/07/22
+
+Scenario 1:
+
+As a consumer of the blog application restful api
+I want to be able to filter posts by author
+And group posts by date then topic 
+and have each node in the tree idenditified by the text propery
+and have the children of each node contained in an item array
+and display only the title and author of the blog at each leaf
+In order to generate a nested list view of blogs
+
+Example:
+
+http://dev.sencha.com/deploy/touch/examples/...
+
+<pre>
+[
+  {
+    text: "blogs",
+    items: [
+      {
+        text: "20110101",
+        items: [
+          {
+            text: "Music"
+            items: [
+              { leaf: true, author: "...", title: "..." }
+            ]
+          },
+          {
+            text: "Death"
+            items: [
+              { leaf: true, author: "...", title: "..." }
+            ]
+          }
+        ]
+      },
+      {
+        text: "20110102",
+        items: [
+          {
+            text: "Food"
+            items: [
+              { leaf: true, author: "...", title: "..." }
+              { leaf: true, author: "...", title: "..." }
+            ]
+          }
+        ]
+      },
+    ]
+  }
+]
+</pre>
+
+<pre>
+      List.metaClass.toTree = { List closures, Closure node = null ->
+        if(closures && !closures.empty) {
+          def result = delegate.groupBy(closures.head()).each({ entry ->
+            entry.value = closures.tail().isEmpty() ? entry.value : entry.value.toTree(closures.tail(), node)
+          }).sort({ a,b -> a.key <=> b.key })
+          if (node)
+            result.collect(node)
+          else
+            result
+        }
+        else
+          delegate
+      }
+      
+      List.metaClass.toTree = { Closure node, Closure... closures ->
+        delegate.toTree(closures as List, node)
+      }
+
+      List.metaClass.toTree = { Closure node, String... properties ->
+        delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node)
+      }
+</pre>
+
+<pre>
+      List.metaClass.toTree = { List closures, Closure node = null, Closure leaf = { it } ->
+        if(closures && !closures.empty) {
+          def result = delegate.groupBy(closures.head()).each({ entry ->
+            entry.value = closures.tail().isEmpty() ? entry.value.collect(leaf) : entry.value.toTree(closures.tail(), node)
+          }).sort({ a,b -> a.key <=> b.key })
+          if (node)
+            result.collect(node)
+          else
+            result
+        }
+        else
+          delegate.collect(leaf)
+      }
+      
+      List.metaClass.toTree = { Closure node, Closure leaf, Closure... closures ->
+        delegate.toTree(closures as List, node, leaf)
+      }
+
+      List.metaClass.toTree = { Closure node, Closure leaf, String... properties ->
+        delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node, leaf)
+      }
+</pre>
+
+<pre>
+  def filter = {
+    def posts = Post.list()
+
+    if (params.grouping) {
+      posts = posts.toTree(
+              { entry -> [text: entry.key, items: entry.value] },
+              { blog  -> [author: blog.author.name, title: blog.title] },
+              params.grouping.split(',')
+      )
+    } else {
+      posts = posts.toTree({ entry -> [text: entry.key, items: entry.value] }, { it }, [])
+    }
+    
+    withFormat {
+      json { render posts as JSON }
+    }
+  } 
+</pre>
+
+<pre>
+  def filter = {
+    def posts = Post.list()
+
+    if (params.grouping) {
+      posts = posts.toTree(
+              { entry -> [text: entry.key, items: entry.value] },
+              { blog  -> [author: blog.author.name, title: blog.title] },
+              params.grouping.split(',')
+      )
+    } else {
+      posts = posts.toTree({ entry -> [text: entry.key, items: entry.value] }, { it }, [])
+    }
+    
+    withFormat {
+      json { render posts as JSON }
+    }
+  } 
+</pre>
+
