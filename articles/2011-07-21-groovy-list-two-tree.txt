@@ -13,7 +13,7 @@ In order to generate a nested list view of blogs
 
 <h5>Example:</h5>
 
-http://dev.sencha.com/deploy/touch/examples/...
+http://dev.sencha.com/deploy/touch/examples/kitchensink
 
 <h5>In Grails:</h5>
 
