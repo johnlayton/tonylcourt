@@ -79,23 +79,23 @@ In order to find and follow an authors series of posts on a specific topic
 http://myapp/blog/post/filter?format=json&author=name&grouping=topic
 
 <h5>In Grails:</h5>
-<pre class="brush:java" type="syntaxhighlighter">
-  def filter = {
-    def posts = Post.findAllByAuthor(params.author ?: "")
+    :::groovy
+    def filter = {
+      def posts = Post.findAllByAuthor(params.author ?: "")
 
-    if (params.grouping && params.grouping.equals("topic")) {
-      posts = posts.groupBy({ it.topic })
-      posts.each({ it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) })
-    } else {
-      posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
-      posts.each({ it.value = it.value.groupBy({ it.topic }) })
-    }
-    
-    withFormat {
-      json { render posts as JSON }
-    }
-  }          
-</pre>
+      if (params.grouping && params.grouping.equals("topic")) {
+        posts = posts.groupBy({ it.topic })
+        posts.each({ it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) })
+      } else {
+        posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
+        posts.each({ it.value = it.value.groupBy({ it.topic }) })
+      }
+      
+      withFormat {
+        json { render posts as JSON }
+      }
+    }          
+
 <h5>Scenario 3:</h5>
 As a consumer of the blog application restful api
 I want to be able to filter posts by author
@@ -103,91 +103,93 @@ And group posts by date last updated then topic
 In order to find the content of the most active topics
 
 <h5>In Grails:</h5>
-<pre class="brush:java" type="syntaxhighlighter">
-  def filter = {
-    def posts = Post.findAllByAuthor(params.author ?: "")
+    :::groovy
+    def filter = {
+      def posts = Post.findAllByAuthor(params.author ?: "")
 
-    if (params.grouping && params.grouping.equals("topic")) {
-      posts = posts.groupBy({ it.topic })
-      posts.each({ it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) })
-    } else if (params.grouping && params.grouping.equals("lastupdate")) {
-      posts = posts.groupBy({ it.lastUpdated.format("yyyymmdd") })
-      posts.each({ it.value = it.value.groupBy({ it.topic }) })
-    } else {
-      posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
-      posts.each({ it.value = it.value.groupBy({ it.topic }) })
-    }
-    
-    withFormat {
-      json { render posts as JSON }
-    }
-  }          
-</pre>
-What about:
-<pre class="brush:java" type="syntaxhighlighter">
-  List.metaClass.toTree = { List closures ->
-    if(!closures.empty)
-      delegate.groupBy(closures.head()).each({ it.value = closures.tail().empty ? it.value : it.value.toTree(closures.tail()) }).sort({ a,b -> a.key <=> b.key })
-    else
-      delegate
-  }
-  List.metaClass.toTree = { Closure... closures ->
-    delegate.toTree(closures as List);
-  }
-</pre>
-<pre class="brush:java" type="syntaxhighlighter">
-  def filter = {
-    def posts = Post.findAllByAuthor(params.author ?: "")
+      if (params.grouping && params.grouping.equals("topic")) {
+        posts = posts.groupBy({ it.topic })
+        posts.each({ it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) })
+      } else if (params.grouping && params.grouping.equals("lastupdate")) {
+        posts = posts.groupBy({ it.lastUpdated.format("yyyymmdd") })
+        posts.each({ it.value = it.value.groupBy({ it.topic }) })
+      } else {
+        posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
+        posts.each({ it.value = it.value.groupBy({ it.topic }) })
+      }
+      
+      withFormat {
+        json { render posts as JSON }
+      }
+    }          
 
-    if (params.grouping && params.grouping.equals("topic")) {
-      posts = posts.toTree({ it.topic }, { it.dateCreated.format("yyyymmdd") })
-    } else if (params.grouping && params.grouping.equals("lastupdate")) {
-      posts = posts.toTree({ it.lastUpdated.format("yyyymmdd") }, { it.topic })
-    } else {
-      posts = posts.toTree({ it.dateCreated.format("yyyymmdd") }, { it.topic })
+What about this added to the bootstrap file:
+    :::groovy
+    List.metaClass.toTree = { List closures ->
+      if(!closures.empty)
+        delegate.groupBy(closures.head()).each({ it.value = closures.tail().empty ? it.value : it.value.toTree(closures.tail()) }).sort({ a,b -> a.key <=> b.key })
+      else
+        delegate
     }
-    
-    withFormat {
-      json { render posts as JSON }
+    List.metaClass.toTree = { Closure... closures ->
+      delegate.toTree(closures as List);
     }
-  }        
-</pre>
-Then:
-<pre class="brush:java" type="syntaxhighlighter">
-  List.metaClass.toTree = { String... properties ->
-    delegate.toTree(properties.collect({ name -> { bean -> bean?."${name}"  }  });
-  }
-</pre>
-<pre class="brush:java" type="syntaxhighlighter">
-class Post {
-  ...
-  def getCreated() {
-    dateCreated.format("yyyymmdd")
-  }
-  
-  def getUpdated() {
-    lastUpdated.format("yyyymmdd")
-  }  
-  ...
-}
-</pre>
-<pre class="brush:java" type="syntaxhighlighter">
-  def filter = {
-    def posts = Post.findAllByAuthor(params.author ?: "")
 
-    if (params.grouping && params.grouping.equals("topic")) {
-      posts = posts.toTree("topic", "created")
-    } else if (params.grouping && params.grouping.equals("lastupdate")) {
-      posts = posts.toTree("updated", "topic")
-    } else {
-      posts = posts.toTree("created", "topic")
+and this added to the controller
+    :::groovy
+    def filter = {
+      def posts = Post.findAllByAuthor(params.author ?: "")
+
+      if (params.grouping && params.grouping.equals("topic")) {
+        posts = posts.toTree({ it.topic }, { it.dateCreated.format("yyyymmdd") })
+      } else if (params.grouping && params.grouping.equals("lastupdate")) {
+        posts = posts.toTree({ it.lastUpdated.format("yyyymmdd") }, { it.topic })
+      } else {
+        posts = posts.toTree({ it.dateCreated.format("yyyymmdd") }, { it.topic })
+      }
+      
+      withFormat {
+        json { render posts as JSON }
+      }
+    }        
+
+Then adding this to the bootstrap:
+    :::groovy
+    List.metaClass.toTree = { String... properties ->
+      delegate.toTree(properties.collect({ name -> { bean -> bean?."${name}"  }  });
     }
-    
-    withFormat {
-      json { render posts as JSON }
+
+and this to the domain
+    :::groovy
+    class Post {
+      ...
+      def getCreated() {
+        dateCreated.format("yyyymmdd")
+      }
+      
+      def getUpdated() {
+        lastUpdated.format("yyyymmdd")
+      }  
+      ...
     }
-  }        
-</pre>
+
+and this to the controller
+    :::groovy
+    def filter = {
+      def posts = Post.findAllByAuthor(params.author ?: "")
+
+      if (params.grouping && params.grouping.equals("topic")) {
+        posts = posts.toTree("topic", "created")
+      } else if (params.grouping && params.grouping.equals("lastupdate")) {
+        posts = posts.toTree("updated", "topic")
+      } else {
+        posts = posts.toTree("created", "topic")
+      }
+      
+      withFormat {
+        json { render posts as JSON }
+      }
+    }        
   
 Or: 
 
@@ -195,67 +197,69 @@ http://myapp/blog/post/filter?format=json&author=name&grouping=topic,created
 http://myapp/blog/post/filter?format=json&author=name&grouping=updated,topic
 http://myapp/blog/post/filter?format=json&author=name&grouping=created,topic
 
-<pre class="brush:java" type="syntaxhighlighter">
-  def filter = {
-    def posts = Post.findAllByAuthor(params.author ?: "")
+    :::groovy
+    def filter = {
+      def posts = Post.findAllByAuthor(params.author ?: "")
 
-    if (params.grouping) {
-      posts = posts.toTree(params.grouping.split(','))
-    }
-    
-    withFormat {
-      json { render posts as JSON }
-    }
-  }        
-</pre>
+      if (params.grouping) {
+        posts = posts.toTree(params.grouping.split(','))
+      }
+      
+      withFormat {
+        json { render posts as JSON }
+      }
+    }        
+
 <h5>Extend:</h5>
 <h5>Scenario 4:</h5>
 As a consumer of the blog application restful api
 I want to be able to filter posts by topic
 And group posts by authors home city
 In order to produce a heat map of topic populatrity
-<pre class="brush:java" type="syntaxhighlighter">
-class Post {
-  ...
-  Author author
-  ...
-}
 
-class Author {
+Try updating the domain
+    :::groovy
+    class Post {
+      ...
+      Author author
+      ...
+    }
 
-  static mapping = {
-  }
-  
-  String name
-  Address address
-}
+    class Author {
 
-class Address {
-  
-  static mapping = {
-  }
+      static mapping = {
+      }
+      
+      String name
+      Address address
+    }
 
-  String city
-}
-</pre>
+    class Address {
+      
+      static mapping = {
+      }
 
-<pre class="brush:java" type="syntaxhighlighter">
-  List.metaClass.toTree = { String... properties ->
-    delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }));
-  }
-</pre>
+      String city
+    }
+
+and the controller
+    :::groovy
+    List.metaClass.toTree = { String... properties ->
+      delegate.toTree(properties.collect({ name -> { bean -> 
+        name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } 
+      }));
+    }
 
 http://myapp/blog/post/filter?format=json&topic=Food&grouping=author.address.city
 
-<pre type="syntaxhighlighter">
-{
-  Melbourne: [
-    { author: { address: { city: "Melbourne" } }, title: "...", topic: "...", text: "...", ... },
-    { author: { address: { city: "Melbourne" } }, title: "...", topic: "...", text: "...", ... }
-  },
-  Adelaide: [
-    { author: { address: { city: "Adelaide" } }, title: "...", topic: "...", text: "...", ... },
-  },
-}
-</pre>
+    :::json
+    {
+      Melbourne: [
+        { author: { address: { city: "Melbourne" } }, title: "...", topic: "...", text: "...", ... },
+        { author: { address: { city: "Melbourne" } }, title: "...", topic: "...", text: "...", ... }
+      },
+      Adelaide: [
+        { author: { address: { city: "Adelaide" } }, title: "...", topic: "...", text: "...", ... },
+      },
+    }
 
