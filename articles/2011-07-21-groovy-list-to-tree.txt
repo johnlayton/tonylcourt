@@ -1,65 +1,75 @@
+---
 title: Groovy List To Tree
 author: John Layton
 date: 2011/07/21
 
-<h4>Scenario 1:</h4>
+Scenario 1:
+
 As a consumer of the blog application restful api
 I want to be able to filter posts by author
 And group posts by date then topic
 In order to generate a time line of an authors posts
-<h5>In Grails:</h5>
+
+In Grails:
+
 http://myapp/blog/post/filter?format=json&author=name
-<pre class="brush:java" type="syntaxhighlighter">
-class Post {
 
-  static mapping = {
-  }
+Firstly create the domain class
 
-  String author
-  String title
-  String topic
-  String text
-  
-  Date dateCreated
-  Date lastUpdated
-}
-</pre>
-<pre class="brush:java" type="syntaxhighlighter">
-class PostController {
+    :::java
+    class Post {
 
-  def filter = {
-    def posts = Post.findAllByAuthor(params.author ?: "")
+      static mapping = {
+      }
+
+      String author
+      String title
+      String topic
+      String text
     
-    posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
-    posts.each({ it.value = it.value.groupBy({ it.topic }) })
-    
-    withFormat {
-      json { render posts as JSON }
+      Date dateCreated
+      Date lastUpdated
     }
-  }          
-}  
-</pre>
-<h5>Result:</h5>
-<pre type="syntaxhighlighter">
-{
-  20110101: {
-    Music: [
-      { author: "...", title: "...", topic: "...", text: "...", ... }
-    ]
-    Death: [
-      { author: "...", title: "...", topic: "...", text: "...", ... }
-    ]
-  },
-  20110102: {
-    Music: [
-      { author: "...", title: "...", topic: "...", text: "...", ... }
-    ]
-    Food: [
-      { author: "...", title: "...", topic: "...", text: "...", ... }
-    ]
-  },
-}
-</pre>
+
+Then create the controller
+
+    :::groovy
+    class PostController {
+
+      def filter = {
+        def posts = Post.findAllByAuthor(params.author ?: "")
+        
+        posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
+        posts.each({ it.value = it.value.groupBy({ it.topic }) })
+        
+        withFormat {
+          json { render posts as JSON }
+        }
+      }          
+    }  
+
+Expected result
+
+    :::json
+    {
+      20110101: {
+        Music: [
+          { author: "...", title: "...", topic: "...", text: "...", ... }
+        ]
+        Death: [
+          { author: "...", title: "...", topic: "...", text: "...", ... }
+        ]
+      },
+      20110102: {
+        Music: [
+          { author: "...", title: "...", topic: "...", text: "...", ... }
+        ]
+        Food: [
+          { author: "...", title: "...", topic: "...", text: "...", ... }
+        ]
+      },
+    }
+
 <h5>Scenario 2:</h5>
 As a consumer of the blog application restful api
 I want to be able to filter posts by author

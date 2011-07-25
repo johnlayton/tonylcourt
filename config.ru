@@ -1,8 +1,13 @@
+require 'rubygems'
+require 'bundler/setup'
 
-require 'toto'
+Bundler.require(:default)
 
 # Rack config
 use Rack::Static, :urls => ['/css', '/js', '/images', '/favicon.ico'], :root => 'public'
+
+use Rack::Codehighlighter, :ultraviolet, :markdown => true, :element => "pre>code", :pattern => /\A:::(\w+)\s*\n/, :theme => "twilight"
+
 use Rack::CommonLogger
 
 if ENV['RACK_ENV'] == 'development'
