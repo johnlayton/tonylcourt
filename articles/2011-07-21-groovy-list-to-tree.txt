@@ -79,6 +79,7 @@ In order to find and follow an authors series of posts on a specific topic
 http://myapp/blog/post/filter?format=json&author=name&grouping=topic
 
 <h5>In Grails:</h5>
+
     :::groovy
     def filter = {
       def posts = Post.findAllByAuthor(params.author ?: "")
@@ -103,6 +104,7 @@ And group posts by date last updated then topic
 In order to find the content of the most active topics
 
 <h5>In Grails:</h5>
+
     :::groovy
     def filter = {
       def posts = Post.findAllByAuthor(params.author ?: "")
@@ -124,6 +126,7 @@ In order to find the content of the most active topics
     }          
 
 What about this added to the bootstrap file:
+
     :::groovy
     List.metaClass.toTree = { List closures ->
       if(!closures.empty)
@@ -136,6 +139,7 @@ What about this added to the bootstrap file:
     }
 
 and this added to the controller
+
     :::groovy
     def filter = {
       def posts = Post.findAllByAuthor(params.author ?: "")
@@ -154,12 +158,14 @@ and this added to the controller
     }        
 
 Then adding this to the bootstrap:
+
     :::groovy
     List.metaClass.toTree = { String... properties ->
       delegate.toTree(properties.collect({ name -> { bean -> bean?."${name}"  }  });
     }
 
 and this to the domain
+
     :::groovy
     class Post {
       ...
@@ -174,6 +180,7 @@ and this to the domain
     }
 
 and this to the controller
+
     :::groovy
     def filter = {
       def posts = Post.findAllByAuthor(params.author ?: "")
