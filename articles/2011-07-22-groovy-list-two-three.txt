@@ -15,132 +15,90 @@ In order to generate a nested list view of blogs
 
 Example:
 
-http://dev.sencha.com/deploy/touch/examples/...
+http://dev.sencha.com/deploy/touch/examples/kitchensink
 
-<pre>
-[
-  {
-    text: "blogs",
-    items: [
+    :::json
+    [
       {
-        text: "20110101",
+        text: "blogs",
         items: [
           {
-            text: "Music"
+            text: "20110101",
             items: [
-              { leaf: true, author: "...", title: "..." }
+              {
+                text: "Music"
+                items: [
+                  { leaf: true, author: "...", title: "..." }
+                ]
+              },
+              {
+                text: "Death"
+                items: [
+                  { leaf: true, author: "...", title: "..." }
+                ]
+              }
             ]
           },
           {
-            text: "Death"
+            text: "20110102",
             items: [
-              { leaf: true, author: "...", title: "..." }
+              {
+                text: "Food"
+                items: [
+                  { leaf: true, author: "...", title: "..." }
+                  { leaf: true, author: "...", title: "..." }
+                ]
+              }
             ]
-          }
+          },
         ]
-      },
-      {
-        text: "20110102",
-        items: [
-          {
-            text: "Food"
-            items: [
-              { leaf: true, author: "...", title: "..." }
-              { leaf: true, author: "...", title: "..." }
-            ]
-          }
-        ]
-      },
+      }
     ]
-  }
-]
-</pre>
 
-<pre>
-      List.metaClass.toTree = { List closures, Closure node = null ->
-        if(closures && !closures.empty) {
-          def result = delegate.groupBy(closures.head()).each({ entry ->
-            entry.value = closures.tail().isEmpty() ? entry.value : entry.value.toTree(closures.tail(), node)
-          }).sort({ a,b -> a.key <=> b.key })
-          if (node)
-            result.collect(node)
-          else
-            result
-        }
+Replace the code in the bootstrap with
+
+    :::groovy
+    List.metaClass.toTree = { List closures, Closure node = null, Closure leaf = { it } ->
+      if(closures && !closures.empty) {
+        def result = delegate.groupBy(closures.head()).each({ entry ->
+          entry.value = closures.tail().isEmpty() ? entry.value.collect(leaf) : entry.value.toTree(closures.tail(), node, leaf)
+        }).sort({ a,b -> a.key <=> b.key })
+        if (node)
+          result.collect(node)
         else
-          delegate
+          result
       }
-      
-      List.metaClass.toTree = { Closure node, Closure... closures ->
-        delegate.toTree(closures as List, node)
-      }
-
-      List.metaClass.toTree = { Closure node, String... properties ->
-        delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node)
-      }
-</pre>
-
-<pre>
-      List.metaClass.toTree = { List closures, Closure node = null, Closure leaf = { it } ->
-        if(closures && !closures.empty) {
-          def result = delegate.groupBy(closures.head()).each({ entry ->
-            entry.value = closures.tail().isEmpty() ? entry.value.collect(leaf) : entry.value.toTree(closures.tail(), node)
-          }).sort({ a,b -> a.key <=> b.key })
-          if (node)
-            result.collect(node)
-          else
-            result
-        }
-        else
-          delegate.collect(leaf)
-      }
-      
-      List.metaClass.toTree = { Closure node, Closure leaf, Closure... closures ->
-        delegate.toTree(closures as List, node, leaf)
-      }
-
-      List.metaClass.toTree = { Closure node, Closure leaf, String... properties ->
-        delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node, leaf)
-      }
-</pre>
-
-<pre>
-  def filter = {
-    def posts = Post.list()
-
-    if (params.grouping) {
-      posts = posts.toTree(
-              { entry -> [text: entry.key, items: entry.value] },
-              { blog  -> [author: blog.author.name, title: blog.title] },
-              params.grouping.split(',')
-      )
-    } else {
-      posts = posts.toTree({ entry -> [text: entry.key, items: entry.value] }, { it }, [])
+      else
+        delegate.collect(leaf)
     }
     
-    withFormat {
-      json { render posts as JSON }
+    List.metaClass.toTree = { Closure node, Closure leaf, Closure... closures ->
+      delegate.toTree(closures as List, node, leaf)
     }
-  } 
-</pre>
 
-<pre>
-  def filter = {
-    def posts = Post.list()
+    List.metaClass.toTree = { Closure node, Closure leaf, String... properties ->
+      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node, leaf)
+    }
 
-    if (params.grouping) {
-      posts = posts.toTree(
-              { entry -> [text: entry.key, items: entry.value] },
-              { blog  -> [author: blog.author.name, title: blog.title] },
-              params.grouping.split(',')
-      )
-    } else {
-      posts = posts.toTree({ entry -> [text: entry.key, items: entry.value] }, { it }, [])
-    }
-    
-    withFormat {
-      json { render posts as JSON }
-    }
-  } 
-</pre>
+and update the controller
+
+    :::groovy
+    def filter = {
+      def posts = Post.list()
+
+      if (params.grouping) {
+        posts = posts.toTree(
+                { entry -> [text: entry.key, items: entry.value] },
+                { blog  -> [author: blog.author.name, title: blog.title] },
+                params.grouping.split(',')
+        )
+      } else {
+        posts = posts.toTree([], { entry -> [text: entry.key, items: entry.value] }, { it })
+      }
+      
+      withFormat {
+        json { render posts as JSON }
+      }
+    } 
+
 
