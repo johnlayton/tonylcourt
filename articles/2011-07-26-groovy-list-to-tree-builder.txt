@@ -60,7 +60,9 @@ Record the configuration:
 
     :::groovy
     def prop(String[] properties) {
-      closures(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }))
+      closures(properties.collect({ name -> 
+          { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } 
+        }))
     }
     
     def closures(Closure[] closures) {
@@ -115,7 +117,9 @@ The completed Tree builder
       }
 
       def prop(String[] properties) {
-        closures(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }))
+        closures(properties.collect({ name -> 
+            { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } 
+          }))
       }
       
       def closures(Closure[] closures) {
