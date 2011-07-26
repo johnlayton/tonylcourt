@@ -1,0 +1,193 @@
+---
+title: Groovy List To Tree Builder
+author: John Layton
+date: 2011/07/26
+
+Scenario 1:
+
+As a consumer of the blog application restful api
+I want to be able to filter posts by author
+And group posts by date then topic 
+and display the title, author and city of the blog at each leaf
+In order to generate a nested list view of blogs
+
+I would like to modify the filter action of the PostController
+
+    :::groovy
+    def filter = {
+        ...
+        posts = posts.toTree({
+          prop params.grouping.split(',')
+          leaf { [ author: it.author.name, city: it.author.address.city, title: it.title ] }
+        })
+        ...
+    }
+  
+Now the toTree method on the list will take a closure
+
+    :::groovy
+    List.metaClass.toTree = { config = {  }->
+      new Tree(config).evaluate(delegate ?: { prop: [] })
+    }
+    
+The Tree class is the builder which will become the delegate
+for the evaluation of the closure, so we will need to implement
+the appropriate methods prop, leaf, node and evaluate
+
+    :::groovy
+    class Tree {
+
+      Tree(config) {
+        config.resolveStrategy = Closure.DELEGATE_FIRST
+        config.delegate = this
+        config.call()
+      }
+
+      def prop(String[] properties) { ... }
+
+      def node(Closure node) { ... }
+
+      def leaf(Closure leaf) { ... }
+
+      def evaluate(list) { ... }
+    }
+
+Now the evaluate will perform the toTree from the original code, 
+and the builder will simply record the properties, leaf and node
+manipulation spectified by the client
+
+Record the configuration:
+
+    :::groovy
+    def prop(String[] properties) {
+      closures(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }))
+    }
+    
+    def closures(Closure[] closures) {
+      this.closures = closures
+    }
+
+    def closures(List<Closure> closures) {
+      this.closures = closures
+    }
+    
+    def node(Closure node) {
+      this.node = node
+      this.nodeProvided = true
+    }
+
+Generate the Map in the Tree builder:
+
+    :::groovy
+    def evaluate(list) {
+      toTree(list, closures, node, leaf)
+    }
+      
+    def toTree(List list, List closures, Closure node = { it }, Closure leaf = { it }) {
+      if(closures && !closures.empty) {
+        def result = list.groupBy(closures.head()).each({ entry ->
+          entry.value = closures.tail().isEmpty() ? entry.value.collect(leaf) : toTree(entry.value, closures.tail(), node, leaf)
+        }).sort({ a,b -> a.key <=> b.key })
+        if (nodeProvided)
+          result.collect(node)
+        else
+          result
+      }
+      else
+        list.collect(leaf)
+    }
+    
+The completed Tree builder
+
+    :::groovy
+    class Tree {
+
+      def closures = [{ it.toString() }]
+      def node = { it }
+      def leaf = { it }
+      
+      def nodeProvided
+
+      Tree(config) {
+        config.resolveStrategy = Closure.DELEGATE_FIRST
+        config.delegate = this
+        config.call()
+      }
+
+      def prop(String[] properties) {
+        closures(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }))
+      }
+      
+      def closures(Closure[] closures) {
+        this.closures = closures
+      }
+
+      def closures(List<Closure> closures) {
+        this.closures = closures
+      }
+      
+      def node(Closure node) {
+        this.node = node
+        this.nodeProvided = true
+      }
+
+      def leaf(Closure leaf) {
+        this.leaf = leaf
+      }
+
+      def evaluate(list) {
+        toTree(list, closures, node, leaf)
+      }
+      
+      def toTree(List list, List closures, Closure node = { it }, Closure leaf = { it }) {
+        if(closures && !closures.empty) {
+          def result = list.groupBy(closures.head()).each({ entry ->
+            entry.value = closures.tail().empty ? entry.value.collect(leaf) : toTree(entry.value, closures.tail(), node, leaf)
+          }).sort({ a,b -> a.key <=> b.key })
+          if (nodeProvided)
+            result.collect(node)
+          else
+            result
+        }
+        else
+          list.collect(leaf)
+      }
+    }
+    
+Scenario 2:
+
+As a consumer of the blog application restful api
+I want to be able to filter posts by author
+And group posts by date then topic 
+and display the title, author and text of the blog at each leaf
+In order to generate a nested list view of blogs
+
+Example
+
+[http://localhost:8080/blog/post/filter.json](http://localhost:8080/blog/post/filter.json)
+
+[...?grouping=topic,created&display=title,text](http://localhost:8080/blog/post/filter.json?grouping=topic,created&display=title,text)
+
+[...?grouping=topic&display=author.name,title,text](http://localhost:8080/blog/post/filter.json?grouping=topic&display=author.name,title,text)
+
+Update the PostController
+
+    :::groovy
+    def filter = {
+        ...
+        if (params.grouping && params.display) {
+          posts = posts.toTree({
+            prop params.grouping.split(',')
+            leaf { post ->
+              params.display.split(',').inject([:], { map, name ->
+                map << [ (name): name.split("\\.").inject(post, { bean, field -> bean?."${field}"  }) ]
+              })
+            }
+            node { [ name: it.key, list: it.value ] }
+          })
+        } else {
+          posts = posts.toTree()
+        }
+        ...
+    }
+
