@@ -4,7 +4,7 @@ require 'bundler/setup'
 Bundler.require(:default)
 
 # Rack config
-use Rack::Static, :urls => ['/css', '/js', '/images', '/favicon.ico'], :root => 'public'
+use Rack::Static, :urls => ['/css', '/js', '/images', '/favicon.ico', '/google87df5b4a2163b7f6.html'], :root => 'public'
 
 use Rack::Codehighlighter, :ultraviolet, :markdown => true, :element => "pre>code", :pattern => /\A:::(\w+)\s*\n/, :theme => "twilight"
 
