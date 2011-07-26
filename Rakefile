@@ -19,7 +19,7 @@ task :new do
     File.open(path, "w") do |file|
       file.write article
     end
-    toto "an article was created for you at #{path}."
+    toto "Article was created for you at #{path}."
   else
     toto "I can't create the article, #{path} already exists."
   end

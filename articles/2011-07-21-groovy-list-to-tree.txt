@@ -210,11 +210,11 @@ Update the PostController
   
 We can now add these grouping properties to the URL
 
-[...&grouping=topic,created](http://localhost:8080/blog/post/filter.json?author=name&grouping=topic,created)
+[http://localhost:8080/blog/post/filter.json&grouping=topic,created](http://localhost:8080/blog/post/filter.json?author=name&grouping=topic,created)
 
-[...&grouping=updated,topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=updated,topic)
+[http://localhost:8080/blog/post/filter.json&grouping=updated,topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=updated,topic)
 
-[...&grouping=created,topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=created,topic)
+[http://localhost:8080/blog/post/filter.json&grouping=created,topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=created,topic)
 
 
 Update the PostController
@@ -276,7 +276,7 @@ Update the BootStrap.groovy
       }));
     }
 
-[...&grouping=author.address.city](http://localhost:8080/blog/post/filter.json?topic=Food&grouping=author.address.city)
+[http://localhost:8080/blog/post/filter.json&grouping=author.address.city](http://localhost:8080/blog/post/filter.json?topic=Food&grouping=author.address.city)
 
     :::json
     {
