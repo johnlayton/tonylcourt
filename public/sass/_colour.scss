@@ -1,0 +1,40 @@
+$lightest-color:       #FFFFFF;
+$light-color:          #E6E6E6;
+$light-color:          #C6C6C6;
+
+$dark-color:           #525252;
+$darker-color:         #252525;
+$darkest-color:        #202020;
+
+$minor-accent-color:   #D9DB8A;
+$accent-color:         #84BCDE;
+$major-accent-color:   #FB292D;
+
+body {
+  background: $light-color;
+/*  
+  color: $light-color;  
+*/
+}
+
+/*
+nav a {
+  color: $light-color;
+}
+
+h1, h1 a {
+  color: $lightest-color;
+}
+
+h2, h2 a {
+  color: $accent-color;
+}
+
+strong {
+  color: $lightest-color;  
+}
+
+a {
+  color: $minor-accent-color;
+}
+*/

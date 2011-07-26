@@ -52,20 +52,20 @@ Expected result
 
     :::json
     {
-      20110101: {
-        Music: [
-          { author: "...", title: "...", topic: "...", text: "...", ... }
-        ]
-        Death: [
-          { author: "...", title: "...", topic: "...", text: "...", ... }
+      "20110101": {
+        "Music": [
+          { "author": "...", "title": "...", "topic": "...", "text": "..." }
+        ],
+        "Death": [
+          { "author": "...", "title": "...", "topic": "...", "text": "..." }
         ]
       },
-      20110102: {
-        Music: [
-          { author: "...", title: "...", topic: "...", text: "...", ... }
-        ]
-        Food: [
-          { author: "...", title: "...", topic: "...", text: "...", ... }
+      "20110102": {
+        "Music": [
+          { "author": "...", "title": "...", "topic": "...", "text": "..." }
+        ],
+        "Food": [
+          { "author": "...", "title": "...", "topic": "...", "text": "..." }
         ]
       },
     }
@@ -280,30 +280,27 @@ Update the BootStrap.groovy
 
     :::json
     {
-      Melbourne: [
+      "Melbourne": [
         { 
-          author: { address: { city: "Melbourne" } }, 
-          title: "...", 
-          topic: "...", 
-          text: "...", 
-          ... 
+          "author": { "address": { "city": "Melbourne" } }, 
+          "title": "...", 
+          "topic": "...", 
+          "text": "..."
         },
         { 
-          author: { address: { city: "Melbourne" } }, 
-          title: "...", 
-          topic: "...", 
-          text: "...", 
-          ... 
+          "author": { "address": { "city": "Melbourne" } }, 
+          "title": "...", 
+          "topic": "...", 
+          "text": "..."
         }
-      },
-      Adelaide: [
+      ],
+      "Adelaide": [
         { 
-          author: { address: { city: "Adelaide" } }, 
-          title: "...", 
-          topic: "...", 
-          text: "...", 
-          ... 
+          "author": { "address": { "city": "Adelaide" } }, 
+          "title": "...", 
+          "topic": "...", 
+          "text": "..."
        },
-      },
+      ],
     }
 
