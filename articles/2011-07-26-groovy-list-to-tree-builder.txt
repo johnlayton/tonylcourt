@@ -168,13 +168,11 @@ In order to generate a nested list view of blogs
 
 Example
 
-[http://localhost:8080/blog/post/filter.json](http://localhost:8080/blog/post/filter.json)
+[http://localhost:8080/blog/post/filter.json?grouping=topic,created&display=title,text](http://localhost:8080/blog/post/filter.json?grouping=topic,created&display=title,text)
 
-[...?grouping=topic,created&display=title,text](http://localhost:8080/blog/post/filter.json?grouping=topic,created&display=title,text)
+[http://localhost:8080/blog/post/filter.json?grouping=topic&display=author.name,title,text](http://localhost:8080/blog/post/filter.json?grouping=topic&display=author.name,title,text)
 
-[...?grouping=topic&display=author.name,title,text](http://localhost:8080/blog/post/filter.json?grouping=topic&display=author.name,title,text)
-
-[...?grouping=topic&display=author,title,text](http://localhost:8080/blog/post/filter.json?grouping=topic&display=author,title,text)
+[http://localhost:8080/blog/post/filter.json?grouping=topic&display=author,title,text](http://localhost:8080/blog/post/filter.json?grouping=topic&display=author,title,text)
 
 Update the PostController
 

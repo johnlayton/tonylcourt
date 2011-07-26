@@ -20,33 +20,33 @@ Example:
     :::json
     [
       {
-        text: "blogs",
-        items: [
+        "text": "blogs",
+        "items": [
           {
-            text: "20110101",
-            items: [
+            "text": "20110101",
+            "items": [
               {
-                text: "Music"
-                items: [
-                  { leaf: true, author: "...", title: "..." }
+                "text": "Music",
+                "items": [
+                  { "leaf": true, "author": "...", "title": "..." }
                 ]
               },
               {
-                text: "Death"
-                items: [
-                  { leaf: true, author: "...", title: "..." }
+                "text": "Death",
+                "items": [
+                  { "leaf": true, "author": "...", "title": "..." }
                 ]
               }
             ]
           },
           {
-            text: "20110102",
-            items: [
+            "text": "20110102",
+            "items": [
               {
-                text: "Food"
-                items: [
-                  { leaf: true, author: "...", title: "..." }
-                  { leaf: true, author: "...", title: "..." }
+                "text": "Food",
+                "items": [
+                  { "leaf": true, "author": "...", "title": "..." }
+                  { "leaf": true, "author": "...", "title": "..." }
                 ]
               }
             ]
