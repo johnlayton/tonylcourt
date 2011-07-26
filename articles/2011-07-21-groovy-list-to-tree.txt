@@ -12,9 +12,9 @@ In order to generate a time line of an authors posts
 
 In Grails:
 
-http://myapp/blog/post/filter?format=json&author=name
+[http://localhost:8080/blog/post/filter.json?author=name](http://localhost:8080/blog/post/filter.json?author=name)
 
-Firstly create the domain class
+Firstly create the Post
 
     :::java
     class Post {
@@ -31,7 +31,7 @@ Firstly create the domain class
       Date lastUpdated
     }
 
-Then create the controller
+Then create the PostController
 
     :::groovy
     class PostController {
@@ -70,15 +70,16 @@ Expected result
       },
     }
 
-<h5>Scenario 2:</h5>
+Scenario 2:
+
 As a consumer of the blog application restful api
 I want to be able to filter posts by author
 And group posts by topic then date
 In order to find and follow an authors series of posts on a specific topic
 
-http://myapp/blog/post/filter?format=json&author=name&grouping=topic
+[http://localhost:8080/blog/post/filter.json?author=name&grouping=topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=topic)
 
-<h5>In Grails:</h5>
+Update the PostController
 
     :::groovy
     def filter = {
@@ -86,7 +87,9 @@ http://myapp/blog/post/filter?format=json&author=name&grouping=topic
 
       if (params.grouping && params.grouping.equals("topic")) {
         posts = posts.groupBy({ it.topic })
-        posts.each({ it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) })
+        posts.each({ 
+          it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) 
+        })
       } else {
         posts = posts.groupBy({ it.dateCreated.format("yyyymmdd") })
         posts.each({ it.value = it.value.groupBy({ it.topic }) })
@@ -97,13 +100,14 @@ http://myapp/blog/post/filter?format=json&author=name&grouping=topic
       }
     }          
 
-<h5>Scenario 3:</h5>
+Scenario 3:
+
 As a consumer of the blog application restful api
 I want to be able to filter posts by author
 And group posts by date last updated then topic
 In order to find the content of the most active topics
 
-<h5>In Grails:</h5>
+Update the PostController
 
     :::groovy
     def filter = {
@@ -111,7 +115,9 @@ In order to find the content of the most active topics
 
       if (params.grouping && params.grouping.equals("topic")) {
         posts = posts.groupBy({ it.topic })
-        posts.each({ it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) })
+        posts.each({ 
+          it.value = it.value.groupBy({ it.dateCreated.format("yyyymmdd") }) 
+        })
       } else if (params.grouping && params.grouping.equals("lastupdate")) {
         posts = posts.groupBy({ it.lastUpdated.format("yyyymmdd") })
         posts.each({ it.value = it.value.groupBy({ it.topic }) })
@@ -127,10 +133,14 @@ In order to find the content of the most active topics
 
 What about this added to the bootstrap file:
 
+Add this to BootStrap.groovy
+
     :::groovy
     List.metaClass.toTree = { List closures ->
       if(!closures.empty)
-        delegate.groupBy(closures.head()).each({ it.value = closures.tail().empty ? it.value : it.value.toTree(closures.tail()) }).sort({ a,b -> a.key <=> b.key })
+        delegate.groupBy(closures.head()).each({ 
+          it.value = closures.tail().empty ? it.value : it.value.toTree(closures.tail()) 
+        }).sort({ a,b -> a.key <=> b.key })
       else
         delegate
     }
@@ -138,7 +148,7 @@ What about this added to the bootstrap file:
       delegate.toTree(closures as List);
     }
 
-and this added to the controller
+Update the PostController
 
     :::groovy
     def filter = {
@@ -157,14 +167,14 @@ and this added to the controller
       }
     }        
 
-Then adding this to the bootstrap:
+Add this to BootStrap.groovy
 
     :::groovy
     List.metaClass.toTree = { String... properties ->
       delegate.toTree(properties.collect({ name -> { bean -> bean?."${name}"  }  });
     }
 
-and this to the domain
+Update the Post
 
     :::groovy
     class Post {
@@ -179,7 +189,7 @@ and this to the domain
       ...
     }
 
-and this to the controller
+Update the PostController
 
     :::groovy
     def filter = {
@@ -198,11 +208,16 @@ and this to the controller
       }
     }        
   
-Or: 
+We can now add these grouping properties to the URL
 
-http://myapp/blog/post/filter?format=json&author=name&grouping=topic,created
-http://myapp/blog/post/filter?format=json&author=name&grouping=updated,topic
-http://myapp/blog/post/filter?format=json&author=name&grouping=created,topic
+[...&grouping=topic,created](http://localhost:8080/blog/post/filter.json?author=name&grouping=topic,created)
+
+[...&grouping=updated,topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=updated,topic)
+
+[...&grouping=created,topic](http://localhost:8080/blog/post/filter.json?author=name&grouping=created,topic)
+
+
+Update the PostController
 
     :::groovy
     def filter = {
@@ -217,14 +232,17 @@ http://myapp/blog/post/filter?format=json&author=name&grouping=created,topic
       }
     }        
 
-<h5>Extend:</h5>
-<h5>Scenario 4:</h5>
+Extend:
+
+Scenario 4:
+
 As a consumer of the blog application restful api
 I want to be able to filter posts by topic
 And group posts by authors home city
 In order to produce a heat map of topic populatrity
 
-Try updating the domain
+Update the Post and add the Author and Address
+
     :::groovy
     class Post {
       ...
@@ -249,7 +267,8 @@ Try updating the domain
       String city
     }
 
-and the controller
+Update the BootStrap.groovy
+
     :::groovy
     List.metaClass.toTree = { String... properties ->
       delegate.toTree(properties.collect({ name -> { bean -> 
@@ -257,16 +276,34 @@ and the controller
       }));
     }
 
-http://myapp/blog/post/filter?format=json&topic=Food&grouping=author.address.city
+[...&grouping=author.address.city](http://localhost:8080/blog/post/filter.json?topic=Food&grouping=author.address.city)
 
     :::json
     {
       Melbourne: [
-        { author: { address: { city: "Melbourne" } }, title: "...", topic: "...", text: "...", ... },
-        { author: { address: { city: "Melbourne" } }, title: "...", topic: "...", text: "...", ... }
+        { 
+          author: { address: { city: "Melbourne" } }, 
+          title: "...", 
+          topic: "...", 
+          text: "...", 
+          ... 
+        },
+        { 
+          author: { address: { city: "Melbourne" } }, 
+          title: "...", 
+          topic: "...", 
+          text: "...", 
+          ... 
+        }
       },
       Adelaide: [
-        { author: { address: { city: "Adelaide" } }, title: "...", topic: "...", text: "...", ... },
+        { 
+          author: { address: { city: "Adelaide" } }, 
+          title: "...", 
+          topic: "...", 
+          text: "...", 
+          ... 
+       },
       },
     }
 

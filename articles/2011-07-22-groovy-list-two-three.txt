@@ -15,7 +15,7 @@ In order to generate a nested list view of blogs
 
 Example:
 
-http://dev.sencha.com/deploy/touch/examples/kitchensink
+[Sencha Touch Example](http://dev.sencha.com/deploy/touch/examples/kitchensink)
 
     :::json
     [
@@ -55,7 +55,7 @@ http://dev.sencha.com/deploy/touch/examples/kitchensink
       }
     ]
 
-Replace the code in the bootstrap with
+Replace the code in the BootStrap.groovy
 
     :::groovy
     List.metaClass.toTree = { List closures, Closure node = null, Closure leaf = { it } ->
@@ -72,15 +72,11 @@ Replace the code in the bootstrap with
         delegate.collect(leaf)
     }
     
-    List.metaClass.toTree = { Closure node, Closure leaf, Closure... closures ->
-      delegate.toTree(closures as List, node, leaf)
-    }
-
-    List.metaClass.toTree = { Closure node, Closure leaf, String... properties ->
+    List.metaClass.toTree = { String... properties, Closure node, Closure leaf ->
       delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node, leaf)
     }
 
-and update the controller
+Update the PostController
 
     :::groovy
     def filter = {
@@ -88,9 +84,9 @@ and update the controller
 
       if (params.grouping) {
         posts = posts.toTree(
-                { entry -> [text: entry.key, items: entry.value] },
-                { blog  -> [author: blog.author.name, title: blog.title] },
-                params.grouping.split(',')
+            params.grouping.split(','),
+            { entry -> [text: entry.key, items: entry.value] },
+            { blog  -> [author: blog.author.name, title: blog.title] }
         )
       } else {
         posts = posts.toTree([], { entry -> [text: entry.key, items: entry.value] }, { it })

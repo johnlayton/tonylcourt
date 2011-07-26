@@ -3,7 +3,8 @@ title: Groovy List Two Tree
 author: John Layton
 date: 2011/07/21
 
-<h4>Scenario 1:</h4>
+Scenario 1:
+
 As a consumer of the blog application restful api
 I want to be able to filter posts by author
 And group posts by date then topic 
@@ -11,15 +12,16 @@ and have each node in the tree idenditified by the text propery
 and have the children of each node contained in an item array
 In order to generate a nested list view of blogs
 
-<h5>Example:</h5>
+Example:
 
-http://dev.sencha.com/deploy/touch/examples/kitchensink
+[Sencha Touch Example](http://dev.sencha.com/deploy/touch/examples/kitchensink)
 
-<h5>In Grails:</h5>
+In Grails:
 
-http://myapp/blog/post/filter?format=json&topic=Food&grouping=topic,created
+[http://app/blog/post/filter?format=json&grouping=topic,created](http://localhost:8080/blog/post/filter?format=json&grouping=topic,created)
 
 Expected Json:
+
     :::json
     [
       {
@@ -59,7 +61,7 @@ Expected Json:
     ]
 
 
-Add the leaf property directly to the domain:
+Add the leaf property to Post:
 
     :::groovy
     class Post {
@@ -68,7 +70,7 @@ Add the leaf property directly to the domain:
       def getLeaf() { true }
     }
 
-and create a class to model the node (not really needed - a map would do)
+Create a class to model the Node (not really needed - a map would do)
 
     :::groovy
     class Node {
@@ -76,13 +78,14 @@ and create a class to model the node (not really needed - a map would do)
       def items = []
     }
 
-Update the bootstrap
+Update the BootStrap.groovy
 
     :::groovy
     List.metaClass.toTree = { List closures, Closure node = null ->
       if(closures && !closures.empty) {
         def result = delegate.groupBy(closures.head()).each({ entry ->
-          entry.value = closures.tail().isEmpty() ? entry.value : entry.value.toTree(closures.tail(), node)
+          entry.value = closures.tail().empty ? 
+            entry.value : entry.value.toTree(closures.tail(), node)
         }).sort({ a,b -> a.key <=> b.key })
         if (node)
           result.collect(node)
@@ -100,12 +103,14 @@ Update the bootstrap
     }
 
     List.metaClass.toNodeTree = { String... properties ->
-      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), { entry ->
-        new Node(text: entry.key ?: "Unknown", items: entry.value)
-      })
+      delegate.toTree(properties.collect({ name -> 
+          { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } 
+        }), { entry ->
+          new Node(text: entry.key ?: "Unknown", items: entry.value)
+        })
     }
 
-If we add a factory method:
+Add a factory method to Node
 
     :::groovy
     class Node {
@@ -117,7 +122,7 @@ If we add a factory method:
       }
     }
 
-Then 
+Then use the factory method in BootStrap.groovy
 
     :::groovy
     List.metaClass.toNodeTree = { Closure... closures ->
@@ -125,13 +130,13 @@ Then
     }
 
     List.metaClass.toNodeTree = { String... properties ->
-      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), Node.&create)
+      delegate.toTree(properties.collect({ name -> 
+          { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } 
+        }), Node.&create)
     }
 
 
-Or using a map we can remove the node class...
-
-In bootstrap
+If we wish the client to describe the Node then update BootStrap.groovy
 
     :::groovy
     List.metaClass.toTree = { Closure node, Closure... closures ->
@@ -139,17 +144,21 @@ In bootstrap
     }
 
     List.metaClass.toTree = { Closure node, String... properties ->
-      delegate.toTree(properties.collect({ name -> { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } }), node)
+      delegate.toTree(properties.collect({ name -> 
+          { bean -> name.split("\\.").inject(bean, { ibean, iname -> ibean?."${iname}"  })  } 
+        }), node)
     }
 
-and in the controller
+Update the PostController
 
     :::groovy
     def filter = {
       def posts = Post.findAllByAuthor(params.author ?: "")
 
+      def node = { entry -> [text: entry.key, items: entry.value] }
+
       if (params.grouping) {
-        posts = posts.toTree({ entry -> [text: entry.key, items: entry.value] }, params.grouping.split(','))
+        posts = posts.toTree(node, params.grouping.split(','))
       }
       
       withFormat {
