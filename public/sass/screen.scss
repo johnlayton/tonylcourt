@@ -25,11 +25,15 @@ header, footer, section, article {
 #by {
 	font-style: italic;
   margin-right: 5px;
+/*
 	font-size: 28px;
+*/
 }
 #caption {
 	position: absolute;
+/*
 	font-size: 24px;
+*/
 	margin: -135px 0 0 70px;
 }
 #path {
@@ -54,7 +58,9 @@ a:hover {
 body > header > h1 {
 	border-left: 30px solid black;
 	padding-left: 30px;
+/*	
   font-size: 201px;
+*/
   margin: 100px 0 15px 0;
   font-weight: normal;
 }
