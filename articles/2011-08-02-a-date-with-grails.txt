@@ -1,0 +1,136 @@
+--- 
+title: A Date with Grails
+author: John Layton
+date: 02/08/2011
+
+Scenario 1:
+
+As a consumer of the blog application restful api
+I want to be able to find the latests posts
+In order to generate page showing the latest status of the blog
+
+In Grails:
+
+[http://localhost:8080/blog/post/latest.json](http://localhost:8080/blog/post/latest.json)
+
+Update the Post
+
+    :::groovy
+    class Post {
+
+      static namedQueries = {
+        latest {
+          ge 'dateCreated', new Date() - 7
+        }
+      }
+      
+
+      static mapping = {
+      }
+
+      String author
+      String title
+      String topic
+      String text
+    
+      Date dateCreated
+      Date lastUpdated
+    }
+    
+And add the latest action to the controller
+
+    :::groovy
+    class PostController {
+
+      def latest = {
+        def posts = Post.latest.list()
+        withFormat {
+          json { render posts as JSON }
+        }
+      }          
+    }
+    
+And add an integration test
+
+    :::groovy
+    class PostIntegrationTests extends GrailsUnitTestCase {
+
+      public void testLatestQueryReturnsOnlyPostsCreatedInLast7Days() {
+      
+        new Post(author: "matthew", title: "Aging", topic: "Death", text: "Blah Blah", dateCreated: new Date() - 8).save()
+        new Post(author: "mark",    title: "Aging", topic: "Death", text: "Blah Blah", dateCreated: new Date() - 7).save()
+        new Post(author: "luke",    title: "Aging", topic: "Death", text: "Blah Blah", dateCreated: new Date() - 6).save()
+      
+        assertEquals 2, Post.latest.count()
+        assertFalse Post.latest.list()*.name.contains("matthew")
+      }
+
+    }
+
+How about testing that the 7 day old post will fall off the 
+summary on the next day
+
+Add this to the BootStrap.groovy
+
+    :::groovy
+    Date.metaClass.static.on = { Date date, work->
+      Date.metaClass.constructor = {           -> Date.getConstructor(long).newInstance(date.time) }
+      Date.metaClass.constructor = { long time -> Date.getConstructor(long).newInstance(date.time) }
+      try {
+        work()
+      } finally {
+        Date.metaClass.constructor = { long time -> Date.getConstructor(long).newInstance(time) }
+        Date.metaClass.constructor = {           -> Date.getConstructor(long).newInstance(System.currentTimeMillis()) }
+      }
+    }
+
+And in PostIntegrationTests
+
+    :::groovy
+    public void testLatestQueryReturnsOnlyPostsCreatedInLast7Days() {
+    
+      new Post(author: "matthew", title: "Aging", topic: "Death", text: "Blah Blah", dateCreated: new Date() - 8).save()
+      new Post(author: "mark",    title: "Aging", topic: "Death", text: "Blah Blah", dateCreated: new Date() - 7).save()
+      new Post(author: "luke",    title: "Aging", topic: "Death", text: "Blah Blah", dateCreated: new Date() - 6).save()
+    
+      assertEquals 2, Post.latest.count()
+      assertFalse Post.latest.list()*.name.contains("matthew")
+      
+      Date.on(new Date() + 1) {
+        assertEquals 2, Post.latest.count()
+        assertFalse Post.latest.list()*.name.contains("matthew")
+        assertFalse Post.latest.list()*.name.contains("mark")
+      }
+    }
+    
+We could also use this to setup the test data
+
+    :::groovy
+    public void testLatestQueryReturnsOnlyPostsCreatedInLast7Days() {
+    
+      Date.on(new Date() - 8) { new Post(author: "matthew", title: "Aging", topic: "Death", text: "Blah Blah").save() }
+      Date.on(new Date() - 7) { new Post(author: "mark",    title: "Aging", topic: "Death", text: "Blah Blah").save() }
+      Date.on(new Date() - 6) { new Post(author: "luke",    title: "Aging", topic: "Death", text: "Blah Blah").save() }
+    
+      Date.on(new Date()) {
+        assertEquals 2, Post.latest.count()
+        assertFalse Post.latest.list()*.name.contains("matthew")
+      }
+            
+      Date.on(new Date() + 1) {
+        assertEquals 2, Post.latest.count()
+        assertFalse Post.latest.list()*.name.contains("matthew")
+        assertFalse Post.latest.list()*.name.contains("mark")
+      }
+    }
+    
+Extended by adding the following to the BootStrap.groovy
+
+    :::groovy
+    Date.metaClass.static.on = { String date, work->
+      Date.on(new SimpleDateFormat( "yyyy.MM.dd'T'HH:mm:ss" ).parse(date), work)
+    }
+    Date.metaClass.on = { work ->
+      Date.on(delegate, work)
+    }
+
